@@ -11,6 +11,7 @@ type Work = {
   title: string;
   slug: string;
   thumbnail_url: string | null;
+  video_url: string | null; // ✅ added
   project_type: string;
   tools: string[];
 };
@@ -23,21 +24,18 @@ export function FeaturedWorks() {
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Supabase fetch
+  // Fetch featured works from Supabase
   useEffect(() => {
     const fetchFeaturedWorks = async () => {
       const { data, error } = await supabase
         .from('works')
-        .select('id,title,slug,thumbnail_url,project_type,tools')
+        .select('id,title,slug,thumbnail_url,video_url,project_type,tools')
         .eq('published', true)
         .order('order_index', { ascending: true })
-        .limit(8); // featured slider items
+        .limit(8);
 
-      if (error) {
-        console.error('Featured works error:', error);
-      } else {
-        setWorks(data || []);
-      }
+      if (error) console.error('Featured works error:', error);
+      else setWorks(data || []);
 
       setLoading(false);
     };
@@ -50,17 +48,14 @@ export function FeaturedWorks() {
       ? works
       : works.filter((w) => w.project_type === filter);
 
-  const current =
-    filtered.length > 0
-      ? filtered[index % filtered.length]
-      : null;
+  const current = filtered.length > 0 ? filtered[index % filtered.length] : null;
 
   if (loading || !current) return null;
 
   return (
     <section id="featured-works" className="relative py-24 bg-slate-50 dark:bg-slate-900/50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
+        {/* Heading */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -80,10 +75,7 @@ export function FeaturedWorks() {
           {FILTERS.map((f) => (
             <button
               key={f}
-              onClick={() => {
-                setFilter(f);
-                setIndex(0);
-              }}
+              onClick={() => { setFilter(f); setIndex(0); }}
               className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
                 filter === f
                   ? 'bg-brand-500 text-white shadow-glow'
@@ -99,10 +91,9 @@ export function FeaturedWorks() {
         <div className="relative max-w-4xl mx-auto">
           <div className="flex items-center gap-4">
 
+            {/* Previous */}
             <button
-              onClick={() =>
-                setIndex((i) => (i - 1 + filtered.length) % filtered.length)
-              }
+              onClick={() => setIndex((i) => (i - 1 + filtered.length) % filtered.length)}
               className="rounded-full p-2 bg-white/10 text-white"
             >
               <ChevronLeft />
@@ -118,44 +109,56 @@ export function FeaturedWorks() {
               >
                 <Link href={`/portfolio/${current.slug}`}>
                   <div className="group relative aspect-video overflow-hidden rounded-2xl bg-slate-800">
+
+                    {/* Gradient overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10" />
 
-                    <div className="absolute inset-0 flex items-center justify-center z-20">
-                      <span className="rounded-full bg-white/20 p-4 group-hover:bg-brand-500/90">
-                        <Play className="h-10 w-10 text-white fill-white" />
-                      </span>
-                    </div>
+                    {/* Play button only if video exists */}
+                    {current.video_url && (
+                      <div className="absolute inset-0 flex items-center justify-center z-20">
+                        <span className="rounded-full bg-white/20 p-4 group-hover:bg-brand-500/90 transition-colors">
+                          <Play className="h-10 w-10 text-white fill-white" />
+                        </span>
+                      </div>
+                    )}
 
+                    {/* Title & tools */}
                     <div className="absolute bottom-0 p-6 z-20">
-                      <span className="text-xs text-white">
-                        {current.project_type}
-                      </span>
-                      <h3 className="text-xl font-semibold text-white">
-                        {current.title}
-                      </h3>
+                      <span className="text-xs text-white">{current.project_type}</span>
+                      <h3 className="text-xl font-semibold text-white">{current.title}</h3>
                       {current.tools?.length > 0 && (
-                        <p className="text-sm text-slate-300">
-                          {current.tools.join(' · ')}
-                        </p>
+                        <p className="text-sm text-slate-300">{current.tools.join(' · ')}</p>
                       )}
                     </div>
 
-                    {current.thumbnail_url && (
+                    {/* Media */}
+                    {current.video_url ? (
+                      <video
+                        src={current.video_url}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        muted
+                        loop
+                        autoPlay
+                        playsInline
+                      />
+                    ) : current.thumbnail_url ? (
                       <img
                         src={current.thumbnail_url}
                         alt={current.title}
                         className="absolute inset-0 w-full h-full object-cover"
                       />
+                    ) : (
+                      <div className="absolute inset-0 bg-slate-700" />
                     )}
+
                   </div>
                 </Link>
               </motion.div>
             </AnimatePresence>
 
+            {/* Next */}
             <button
-              onClick={() =>
-                setIndex((i) => (i + 1) % filtered.length)
-              }
+              onClick={() => setIndex((i) => (i + 1) % filtered.length)}
               className="rounded-full p-2 bg-white/10 text-white"
             >
               <ChevronRight />
@@ -163,6 +166,7 @@ export function FeaturedWorks() {
 
           </div>
 
+          {/* View all link */}
           <div className="mt-6 text-center">
             <Link href="/portfolio" className="text-brand-500 font-semibold">
               View all works →
