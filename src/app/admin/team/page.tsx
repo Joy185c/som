@@ -6,20 +6,25 @@ import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { apiGet, apiMutate, apiUpload } from '@/lib/admin-api';
 
+type SocialLinks = { linkedin?: string; twitter?: string; email?: string };
+
 type TeamMember = {
   id: string;
   name: string;
   position: string;
   bio: string | null;
   photo_url: string | null;
+  social_links?: SocialLinks | null;
   published: boolean;
 };
+
+const emptySocial: SocialLinks = { linkedin: '', twitter: '', email: '' };
 
 export default function AdminTeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<'add' | string | null>(null);
-  const [form, setForm] = useState({ name: '', position: '', bio: '', photo_url: '', published: true });
+  const [form, setForm] = useState({ name: '', position: '', bio: '', photo_url: '', published: true, social_links: emptySocial });
   const [uploading, setUploading] = useState(false);
 
   const load = async () => {
@@ -39,7 +44,15 @@ export default function AdminTeamPage() {
   }, []);
 
   const openEdit = (m: TeamMember) => {
-    setForm({ name: m.name, position: m.position, bio: m.bio ?? '', photo_url: m.photo_url ?? '', published: m.published });
+    const sl = (m.social_links && typeof m.social_links === 'object') ? m.social_links as SocialLinks : {};
+    setForm({
+      name: m.name,
+      position: m.position,
+      bio: m.bio ?? '',
+      photo_url: m.photo_url ?? '',
+      published: m.published,
+      social_links: { linkedin: sl.linkedin ?? '', twitter: sl.twitter ?? '', email: sl.email ?? '' },
+    });
     setModal(m.id);
   };
 
@@ -59,12 +72,18 @@ export default function AdminTeamPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const social_links = {
+        linkedin: form.social_links.linkedin || undefined,
+        twitter: form.social_links.twitter || undefined,
+        email: form.social_links.email || undefined,
+      };
       if (modal === 'add') {
         await apiMutate('/api/admin/team', 'POST', {
           name: form.name,
           position: form.position,
           bio: form.bio || null,
           photo_url: form.photo_url || null,
+          social_links: Object.keys(social_links).some((k) => (social_links as Record<string, string | undefined>)[k]) ? social_links : {},
           published: form.published,
         });
         toast.success('Member added');
@@ -75,12 +94,13 @@ export default function AdminTeamPage() {
           position: form.position,
           bio: form.bio || null,
           photo_url: form.photo_url || null,
+          social_links: Object.keys(social_links).some((k) => (social_links as Record<string, string | undefined>)[k]) ? social_links : {},
           published: form.published,
         });
         toast.success('Updated');
       }
       setModal(null);
-      setForm({ name: '', position: '', bio: '', photo_url: '', published: true });
+      setForm({ name: '', position: '', bio: '', photo_url: '', published: true, social_links: emptySocial });
       load();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed');
@@ -115,7 +135,7 @@ export default function AdminTeamPage() {
         </div>
         <button
           type="button"
-          onClick={() => { setModal('add'); setForm({ name: '', position: '', bio: '', photo_url: '', published: true }); }}
+          onClick={() => { setModal('add'); setForm({ name: '', position: '', bio: '', photo_url: '', published: true, social_links: emptySocial }); }}
           className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 font-semibold text-white hover:bg-brand-400"
         >
           <Plus className="h-5 w-5" /> Add member
@@ -192,6 +212,18 @@ export default function AdminTeamPage() {
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handlePhoto(e.target.files[0])} />
                   </label>
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">LinkedIn URL</label>
+                <input type="url" value={form.social_links.linkedin} onChange={(e) => setForm({ ...form, social_links: { ...form.social_links, linkedin: e.target.value } })} placeholder="https://linkedin.com/in/..." className="w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-white" />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Twitter / X URL</label>
+                <input type="url" value={form.social_links.twitter} onChange={(e) => setForm({ ...form, social_links: { ...form.social_links, twitter: e.target.value } })} placeholder="https://twitter.com/..." className="w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-white" />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Email (Gmail / contact)</label>
+                <input type="email" value={form.social_links.email} onChange={(e) => setForm({ ...form, social_links: { ...form.social_links, email: e.target.value } })} placeholder="member@company.com" className="w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-white" />
               </div>
               <div className="flex items-center gap-2">
                 <input type="checkbox" id="pub" checked={form.published} onChange={(e) => setForm({ ...form, published: e.target.checked })} className="rounded border-white/20 text-brand-500" />

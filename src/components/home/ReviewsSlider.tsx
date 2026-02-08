@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Star, Quote } from 'lucide-react';
+import { Star, Quote, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 type Review = {
@@ -22,7 +23,7 @@ const DEMO_REVIEWS: Review[] = [
 
 export function ReviewsSlider() {
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [index, setIndex] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -31,25 +32,38 @@ export function ReviewsSlider() {
         .select('id, client_name, content, rating, project_type')
         .eq('approved', true)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(20);
       if (!error && data?.length) setReviews(data);
-      else if (!data?.length) setReviews(DEMO_REVIEWS);
+      else setReviews(DEMO_REVIEWS);
     };
     fetchReviews();
   }, []);
 
   const list = reviews.length > 0 ? reviews : DEMO_REVIEWS;
+
+  // Auto-scroll: shift by one card every 4s
   useEffect(() => {
     if (list.length <= 1) return;
-    const t = setInterval(() => setIndex((i) => (i + 1) % list.length), 5000);
-    return () => clearInterval(t);
+    const el = scrollRef.current;
+    if (!el) return;
+    const step = 320; // card width + gap
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    const interval = setInterval(() => {
+      el.scrollBy({ left: step, behavior: 'smooth' });
+      if (el.scrollLeft >= maxScroll - 10) el.scrollTo({ left: 0, behavior: 'smooth' });
+    }, 4000);
+    return () => clearInterval(interval);
   }, [list.length]);
 
-  const review = list[index];
-  if (!review) return null;
+  const scroll = (dir: 'left' | 'right') => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const step = 320;
+    el.scrollBy({ left: dir === 'left' ? -step : step, behavior: 'smooth' });
+  };
 
   return (
-    <section className="py-24 bg-slate-900 dark:bg-slate-950">
+    <section className="py-24 bg-slate-900 dark:bg-slate-950 overflow-hidden">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -61,48 +75,60 @@ export function ReviewsSlider() {
           <p className="mt-2 text-slate-400">Trusted by brands worldwide.</p>
         </motion.div>
 
-        <motion.div
-          key={review.id}
-          initial={{ opacity: 0, x: 30 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="max-w-3xl mx-auto"
-        >
-          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-8 sm:p-10 shadow-glass">
-            <Quote className="h-10 w-10 text-brand-500/50 mb-4" />
-            <div className="flex gap-1 mb-4">
-              {Array.from({ length: review.rating }).map((_, i) => (
-                <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-400" />
-              ))}
-            </div>
-            <p className="text-lg text-slate-300 italic">&ldquo;{review.content}&rdquo;</p>
-            <div className="mt-6 flex items-center gap-4">
-              <div className="h-12 w-12 rounded-full bg-brand-500/30 flex items-center justify-center text-lg font-bold text-white">
-                {review.client_name.charAt(0)}
-              </div>
-              <div>
-                <p className="font-semibold text-white">{review.client_name}</p>
-                <p className="text-sm text-slate-500">{review.project_type ?? 'Client'}</p>
-              </div>
-            </div>
-          </div>
-        </motion.div>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => scroll('left')}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/10 hover:bg-white/20 p-2 text-white transition-colors hidden md:flex items-center justify-center"
+            aria-label="Previous reviews"
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+          <button
+            type="button"
+            onClick={() => scroll('right')}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/10 hover:bg-white/20 p-2 text-white transition-colors hidden md:flex items-center justify-center"
+            aria-label="Next reviews"
+          >
+            <ChevronRight className="h-6 w-6" />
+          </button>
 
-        <div className="flex justify-center gap-2 mt-8">
-          {list.map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => setIndex(i)}
-              className={`h-2 rounded-full transition-all ${
-                i === index ? 'w-8 bg-brand-500' : 'w-2 bg-white/30 hover:bg-white/50'
-              }`}
-              aria-label={`Go to review ${i + 1}`}
-            />
-          ))}
+          <div
+            ref={scrollRef}
+            className="flex gap-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4 scroll-smooth"
+            style={{ scrollSnapType: 'x mandatory' }}
+          >
+            {list.map((review) => (
+              <motion.div
+                key={review.id}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="flex-shrink-0 w-[300px] sm:w-[320px] snap-start rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-glass"
+              >
+                <Quote className="h-8 w-8 text-brand-500/50 mb-3" />
+                <div className="flex gap-1 mb-3">
+                  {Array.from({ length: review.rating }).map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+                <p className="text-slate-300 text-sm line-clamp-4">&ldquo;{review.content}&rdquo;</p>
+                <div className="mt-4 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-brand-500/30 flex items-center justify-center text-sm font-bold text-white">
+                    {review.client_name.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-white text-sm">{review.client_name}</p>
+                    <p className="text-xs text-slate-500">{review.project_type ?? 'Client'}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
 
         <p className="mt-8 text-center">
-          <a href="/reviews" className="text-brand-400 font-semibold hover:underline">View all reviews →</a>
+          <Link href="/reviews" className="text-brand-400 font-semibold hover:underline">View all reviews & submit yours →</Link>
         </p>
       </div>
     </section>

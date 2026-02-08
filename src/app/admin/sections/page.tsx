@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { GripVertical, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { GripVertical, Eye, EyeOff, Loader2, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { apiGet, apiMutate } from '@/lib/admin-api';
 
@@ -12,6 +12,8 @@ export default function AdminSectionsPage() {
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [addName, setAddName] = useState('');
+  const [adding, setAdding] = useState(false);
 
   const load = async () => {
     try {
@@ -70,6 +72,22 @@ export default function AdminSectionsPage() {
     saveOrder(next);
   };
 
+  const addSection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addName.trim()) return;
+    setAdding(true);
+    try {
+      await apiMutate('/api/admin/sections', 'POST', { name: addName.trim() });
+      toast.success('Section added');
+      setAddName('');
+      load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to add');
+    } finally {
+      setAdding(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-slate-400">
@@ -83,9 +101,23 @@ export default function AdminSectionsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Section Manager</h1>
-          <p className="mt-1 text-slate-400">Reorder and toggle visibility. Changes save automatically.</p>
+          <p className="mt-1 text-slate-400">Add sections (e.g. Reels, Shorts), reorder and toggle visibility.</p>
         </div>
-        {saving && <span className="text-sm text-slate-500 flex items-center gap-1"><Loader2 className="h-4 w-4 animate-spin" /> Saving...</span>}
+        <div className="flex items-center gap-3">
+          {saving && <span className="text-sm text-slate-500 flex items-center gap-1"><Loader2 className="h-4 w-4 animate-spin" /> Saving...</span>}
+          <form onSubmit={addSection} className="flex gap-2">
+            <input
+              type="text"
+              value={addName}
+              onChange={(e) => setAddName(e.target.value)}
+              placeholder="New section name"
+              className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-white placeholder-slate-500 w-48"
+            />
+            <button type="submit" disabled={adding} className="inline-flex items-center gap-1 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-400 disabled:opacity-50">
+              <Plus className="h-4 w-4" /> Add
+            </button>
+          </form>
+        </div>
       </div>
       {sections.length === 0 ? (
         <p className="mt-8 text-slate-500">No sections yet. Run the seed in <code className="bg-slate-800 px-1 rounded">supabase/schema.sql</code> or add sections via SQL.</p>

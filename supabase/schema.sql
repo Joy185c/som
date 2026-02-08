@@ -120,12 +120,19 @@ insert into public.sections (name, slug, order_index, visible) values
 on conflict (slug) do nothing;
 
 -- Seed default site settings (optional)
+-- socialLinks: jsonb e.g. {"youtube":"","facebook":"","instagram":"","twitter":"","linkedin":"","whatsapp":""}
 insert into public.site_settings (key, value) values
   ('agencyName', '"ShowOffs Media"'),
+  ('websiteUrl', '""'),
+  ('logoUrl', '""'),
   ('email', '"hello@showoffsmedia.com"'),
   ('whatsapp', '""'),
+  ('contactPhone', '""'),
   ('seoTitle', '"ShowOffs Media — We Make Brands Stand Out"'),
   ('seoDescription', '"Premium video production, Reels, Shorts & motion graphics."'),
   ('darkModeDefault', 'true'),
-  ('socialLinks', '{}')
+  ('heroVideoUrl', '""'),
+  ('heroHeadline', '"We Make Brands Stand Out"'),
+  ('heroSubtext', '"Premium video production, Reels, Shorts & motion graphics that get seen."'),
+  ('socialLinks', '{"youtube":"","facebook":"","instagram":"","twitter":"","linkedin":""}')
 on conflict (key) do update set value = excluded.value, updated_at = now();

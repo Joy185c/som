@@ -3,12 +3,17 @@ import { requireAdmin } from '../auth-helper';
 
 const DEFAULT_KEYS = [
   'agencyName',
+  'websiteUrl',
+  'logoUrl',
   'email',
   'whatsapp',
+  'contactPhone',
   'seoTitle',
   'seoDescription',
   'darkModeDefault',
-  'logoUrl',
+  'heroVideoUrl',
+  'heroHeadline',
+  'heroSubtext',
   'ogImage',
   'favicon',
   'socialLinks',
@@ -31,13 +36,28 @@ export async function GET(request: Request) {
   return NextResponse.json(settings);
 }
 
+/** Normalize value so we never send null (site_settings.value is NOT NULL). */
+function normalizeValue(key: string, value: unknown): string | number | boolean | Record<string, unknown> {
+  if (value === null || value === undefined) {
+    if (key === 'socialLinks') return {};
+    if (key === 'darkModeDefault') return false;
+    return '';
+  }
+  if (key === 'socialLinks') {
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) return value as Record<string, unknown>;
+    return {};
+  }
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
+  return String(value);
+}
+
 export async function PUT(request: Request) {
   const result = await requireAdmin(request);
   if (result instanceof NextResponse) return result;
   const { db } = result;
   const body = await request.json();
   for (const key of Object.keys(body)) {
-    const value = body[key];
+    const value = normalizeValue(key, body[key]);
     const { error } = await db
       .from('site_settings')
       // @ts-expect-error Supabase client generic inference for upsert

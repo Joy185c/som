@@ -2,19 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+:root,
+.theme-light {
   --foreground: #0f172a;
   --background: #f8fafc;
+  --accent: #0ea5e9;
   --glass: rgba(255, 255, 255, 0.08);
   --glass-border: rgba(255, 255, 255, 0.12);
   --glow: rgba(14, 165, 233, 0.4);
 }
 
-.dark {
+.dark,
+.theme-dark {
   --foreground: #f1f5f9;
   --background: #0f172a;
+  --accent: #38bdf8;
   --glass: rgba(255, 255, 255, 0.06);
   --glass-border: rgba(255, 255, 255, 0.1);
+  --glow: rgba(14, 165, 233, 0.4);
+}
+
+.theme-brand {
+  --foreground: #f1f5f9;
+  --background: #0c4a6e;
+  --accent: #38bdf8;
+  --glass: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glow: rgba(56, 189, 248, 0.5);
+}
+
+.theme-purple {
+  --foreground: #f5f3ff;
+  --background: #1e1b4b;
+  --accent: #a78bfa;
+  --glass: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glow: rgba(167, 139, 250, 0.4);
 }
 
 html {
@@ -24,7 +47,88 @@ html {
 body {
   color: var(--foreground);
   background: var(--background);
-  transition: background 0.3s, color 0.3s;
+  transition: background 0.4s ease, color 0.3s ease;
+  min-height: 100vh;
+}
+
+/* Site-wide gradient background */
+.bg-animated {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    160deg,
+    var(--background) 0%,
+    color-mix(in srgb, var(--accent) 12%, var(--background)) 40%,
+    color-mix(in srgb, var(--accent) 6%, var(--background)) 70%,
+    var(--background) 100%
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 18s ease infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Hero 3D-style animated background (video editing / cinematic) */
+.hero-3d-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  perspective: 800px;
+}
+
+.hero-3d-bg::before,
+.hero-3d-bg::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.25;
+  animation: floatOrb 20s ease-in-out infinite;
+}
+
+.hero-3d-bg::before {
+  width: 60vmax;
+  height: 60vmax;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.4) 0%, transparent 70%);
+  top: -20%;
+  left: -10%;
+  animation-delay: 0s;
+}
+
+.hero-3d-bg::after {
+  width: 40vmax;
+  height: 40vmax;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.3) 0%, transparent 70%);
+  bottom: -20%;
+  right: -10%;
+  animation-delay: -10s;
+}
+
+@keyframes floatOrb {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(5%, 5%) scale(1.05); }
+  66% { transform: translate(-5%, -5%) scale(0.95); }
+}
+
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 60px 60px;
+  transform: perspective(600px) rotateX(55deg) scale(1.2);
+  transform-origin: center 100px;
+  animation: gridPulse 8s ease-in-out infinite;
+}
+
+@keyframes gridPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
 }
 
 /* Glass card utility */
@@ -34,6 +138,9 @@ body {
   }
   .glass-card-hover {
     @apply glass-card transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:shadow-glow;
+  }
+  .btn-focus {
+    @apply focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:ring-offset-2 focus:ring-offset-slate-900;
   }
 }
 
