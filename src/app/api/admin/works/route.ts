@@ -31,12 +31,14 @@ export async function POST(request: Request) {
     is_vertical,
     published,
     order_index,
+    section_id,
   } = body;
-  if (!title || !slug || !project_type) {
-    return NextResponse.json({ error: 'title, slug, project_type required' }, { status: 400 });
+  if (!title || !project_type) {
+    return NextResponse.json({ error: 'title, project_type required' }, { status: 400 });
   }
   const { data, error } = await db
     .from('works')
+    // @ts-expect-error Supabase client generic inference for insert
     .insert({
       title,
       slug: slug || title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
@@ -49,6 +51,7 @@ export async function POST(request: Request) {
       is_vertical: !!is_vertical,
       published: published !== false,
       order_index: typeof order_index === 'number' ? order_index : 0,
+      section_id: section_id || null,
     })
     .select('id')
     .single();
@@ -63,12 +66,14 @@ export async function PATCH(request: Request) {
   const body = await request.json();
   const { id, ...updates } = body;
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
-  const allowed = ['title', 'slug', 'description', 'video_url', 'thumbnail_url', 'project_type', 'tools', 'tags', 'is_vertical', 'published', 'order_index'];
+  const allowed = ['title', 'slug', 'description', 'video_url', 'thumbnail_url', 'project_type', 'tools', 'tags', 'is_vertical', 'published', 'order_index', 'section_id'];
   const payload: Record<string, unknown> = {};
   for (const k of allowed) {
     if (updates[k] !== undefined) payload[k] = updates[k];
   }
   if (Object.keys(payload).length === 0) return NextResponse.json({ error: 'No updates' }, { status: 400 });
+  payload.updated_at = new Date().toISOString();
+  // @ts-expect-error Supabase client generic inference for update
   const { error } = await db.from('works').update(payload).eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

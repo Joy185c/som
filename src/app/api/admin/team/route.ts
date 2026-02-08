@@ -19,6 +19,7 @@ export async function POST(request: Request) {
   if (!name || !position) return NextResponse.json({ error: 'name, position required' }, { status: 400 });
   const { data, error } = await db
     .from('team_members')
+    // @ts-expect-error Supabase client generic inference for insert
     .insert({
       name,
       position,
@@ -47,6 +48,7 @@ export async function PATCH(request: Request) {
     if (updates[k] !== undefined) payload[k] = updates[k];
   }
   if (Object.keys(payload).length === 0) return NextResponse.json({ error: 'No updates' }, { status: 400 });
+  // @ts-expect-error Supabase client generic inference for update
   const { error } = await db.from('team_members').update(payload).eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

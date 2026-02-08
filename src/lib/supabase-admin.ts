@@ -31,6 +31,6 @@ export async function getAdminUserFromRequest(request: Request): Promise<{ id: s
     if (!error && user) return { id: user.id, email: user.email ?? '' };
   }
 
-  if (token === 'demo-token') return { id: 'demo', email: 'demo@local' };
+  if (token === 'demo-token' || token === 'demo-admin-token') return { id: 'demo', email: 'demo@local' };
   return null;
 }

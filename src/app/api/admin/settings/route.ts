@@ -24,7 +24,8 @@ export async function GET(request: Request) {
   for (const k of DEFAULT_KEYS) {
     settings[k] = null;
   }
-  for (const row of rows ?? []) {
+  const settingsRows = (rows ?? []) as { key: string; value: unknown }[];
+  for (const row of settingsRows) {
     settings[row.key] = row.value;
   }
   return NextResponse.json(settings);
@@ -39,6 +40,7 @@ export async function PUT(request: Request) {
     const value = body[key];
     const { error } = await db
       .from('site_settings')
+      // @ts-expect-error Supabase client generic inference for upsert
       .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   }

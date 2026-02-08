@@ -20,6 +20,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'sections array required' }, { status: 400 });
   }
   for (const s of sections) {
+    // @ts-expect-error Supabase client generic inference for update
     const { error } = await db.from('sections').update({ order_index: s.order_index, visible: s.visible }).eq('id', s.id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   }

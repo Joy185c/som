@@ -17,6 +17,7 @@ export async function PATCH(request: Request) {
   const body = await request.json();
   const { id, approved } = body;
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+  // @ts-expect-error Supabase client generic inference for update
   const { error } = await db.from('reviews').update({ approved: !!approved }).eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
   }
   const { data, error } = await db
     .from('reviews')
+    // @ts-expect-error Supabase client generic inference for insert
     .insert({
       client_name,
       rating: Math.min(5, Math.max(1, Number(rating))),
